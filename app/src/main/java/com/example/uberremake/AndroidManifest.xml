@@ -24,29 +24,20 @@
             android:value="AIzaSyCDJ6Q9yHNAZjVKm9NaRdI6wTACLyjFzY4" />
 
         <activity
-            android:name=".home.DriverHomeActivity"
-            android:exported="true"
-            android:label="@string/title_activity_driver_home"
-            android:theme="@style/Theme.UberRemake.NoActionBar" />
-        <activity
             android:name=".SplashScreenActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/SplashTheme">
+            android:theme="@style/splashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".service.MyFirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firesbase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+        <activity
+            android:name=".RiderHomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.RiderRemake" />
     </application>
 
 </manifest>
