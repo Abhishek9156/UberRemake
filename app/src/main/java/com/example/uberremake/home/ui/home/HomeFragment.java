@@ -55,23 +55,23 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-public class HomeFragment extends Fragment implements OnMapReadyCallback{
+public class HomeFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     private FragmentHomeBinding binding;
     HomeViewModel homeViewModel;
     SupportMapFragment mapFragment;
-//    //Location
+    //    //Location
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
 
-//    //online system
+    //    //online system
     DatabaseReference onlineRef, currentRef, deriverLocationRef;
     GeoFire geoFire;
     ValueEventListener onlineValueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(@NonNull DataSnapshot snapshot) {
-            if (snapshot.exists() && currentRef!=null )
+            if (snapshot.exists() && currentRef != null)
                 currentRef.onDisconnect().removeValue();
         }
 
@@ -100,14 +100,8 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback{
 
     private void init() {
         onlineRef = FirebaseDatabase.getInstance().getReference().child(".info/connected");
-//        deriverLocationRef=FirebaseDatabase.getInstance().getReference(Common.DRIVER_LOCATION_REFERENCE);
-//        currentRef = deriverLocationRef
-//                                        .child(FirebaseAuth.getInstance().getCurrentUser().getUid());
-
-     //   geoFire = new GeoFire(deriverLocationRef);
 
         registerOnlineSystem();
-
 
 
         locationRequest = new LocationRequest();
@@ -120,57 +114,57 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback{
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 super.onLocationResult(locationResult);
+
                 LatLng newPosition = new LatLng(locationResult.getLastLocation().getLatitude(),
                         locationResult.getLastLocation().getLongitude());
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newPosition, 18f));
 
 
-                //Update location
-                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(),
-                        new GeoLocation(locationResult.getLastLocation().getLatitude(),
-                                locationResult.getLastLocation().getLongitude()),
-                        (key, error) -> {
-                            if (error != null)
-                                Snackbar.make(mapFragment.getView(), error.getMessage(), Snackbar.LENGTH_LONG)
-                                        .show();
-                            else
-                                Snackbar.make(mapFragment.getView(), "You are Online", Snackbar.LENGTH_LONG)
-                                        .show();
-                        });
+                Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+                List<Address> addressList;
+                try {
+                    addressList = geocoder.getFromLocation(locationResult.getLastLocation().getLatitude(),
+                            locationResult.getLastLocation().getLongitude(), 1);
+                    String cityName = addressList.get(0).getLocality();
+
+                    deriverLocationRef = FirebaseDatabase.getInstance().getReference(Common.DRIVER_LOCATION_REFERENCE)
+                            .child(cityName);
+                    currentRef = deriverLocationRef
+                            .child(FirebaseAuth.getInstance().getCurrentUser().getUid());
+                    geoFire = new GeoFire(deriverLocationRef);
+
+
+                    //Update location
+                    geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(),
+                            new GeoLocation(locationResult.getLastLocation().getLatitude(),
+                                    locationResult.getLastLocation().getLongitude()),
+                            (key, error) -> {
+                                if (error != null)
+                                    Snackbar.make(mapFragment.getView(), error.getMessage(), Snackbar.LENGTH_LONG)
+                                            .show();
+                                else
+                                    Snackbar.make(mapFragment.getView(), "You are Online", Snackbar.LENGTH_LONG)
+                                            .show();
+                            });
+
+
+                } catch (IOException e) {
+                    Snackbar.make(getView(), e.getMessage(), Snackbar.LENGTH_LONG).show();
+                }
+
 
             }
         };
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-           // Snackbar.make(getView(), getString(R.string.permission_required), Snackbar.LENGTH_LONG).show();
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                &&
+                ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(getContext(), getString(R.string.permission_required), Toast.LENGTH_SHORT).show();
             return;
         }
+
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
-        fusedLocationProviderClient.getLastLocation()
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                })
-                .addOnSuccessListener(location -> {
-                    Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
-                    List<Address> addressList;
-                    try {
-                        addressList = geocoder.getFromLocation(location.getLatitude(),
-                                location.getLongitude(), 1);
-                        String cityName = addressList.get(0).getLocality();
-
-                        deriverLocationRef = FirebaseDatabase.getInstance().getReference(Common.DRIVER_LOCATION_REFERENCE)
-                                .child(cityName);
-                        currentRef = deriverLocationRef
-                                .child(FirebaseAuth.getInstance().getCurrentUser().getUid());
-                        geoFire = new GeoFire(deriverLocationRef);
-
-
-                    } catch (IOException e) {
-                        Snackbar.make(getView(), e.getMessage(), Snackbar.LENGTH_LONG).show();
-                    }
-                });
 
 
     }
